@@ -3,13 +3,11 @@ const output = process.stdout;
 const req = require('request');
 module.exports = {
     pwd: function(){
-            console.log(process.cwd());  
-            output.write('prompt > ');            
+        output.write(process.cwd());  
     },
     date: function(file){
         const d = new Date();
-        console.log(d.toString()); 
-        output.write('prompt > ');
+        output.write(d.toString()); 
     },
 
     ls: function(file){
@@ -18,9 +16,9 @@ module.exports = {
             files.forEach(function(file){
                 output.write(file.toString() + '\n');
             })
-            output.write('prompt > ');  
         });
     }, 
+    
     echo: function(file){
         console.log(file);
     },
