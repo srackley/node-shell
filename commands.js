@@ -1,59 +1,61 @@
 const fs = require('fs');
 const output = process.stdout;
 const req = require('request');
-module.exports = {
-    pwd: function(){
-        output.write(process.cwd());  
-    },
-    date: function(file){
-        const d = new Date();
-        output.write(d.toString()); 
-    },
 
-    ls: function(file){
+    function pwd(){
+        output.write(process.cwd());  
+    };
+
+    function date(file){
+        output.write(Date()); 
+    };
+
+    function ls(file){
         fs.readdir('.', function(err, files){
             if (err) throw err;
-            files.forEach(function(file){
-                output.write(file.toString() + '\n');
-            })
+            output.write(files.join('\n'));
         });
-    }, 
-    
-    echo: function(file){
-        console.log(file);
-    },
+    };
 
-    cat: function(file){
-        fs.readFile(file, function(err, data){
-            if (err) throw err;
-           output.write(data + '\n');
-            output.write('prompt > ');  
+    function echo(file){
+        const info = file
+        .split(' ')
+        .map((arg)=> (arg[0] === '$') ? process.env[arg.slice(1)] : arg)
+        .join(' ');
+        output.write(info);
+    };
+
+    function cat(files){
+        files = files.split(' ');
+        const texts = [];
+        var count = 0;
+        files.forEach(function(file, i){
+            fs.readFile(file, function(err, text){
+                if (err) throw err;
+                texts[i] = text;
+                count++;
+                if (count === files.length) output.write(texts.join(''));
+            });
         });
-    },
+    };
 
-    head: function(file){
-        fs.readFile(file, function(err, data){
+    function head(file){
+        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
             if (err) throw err;
-            const lines = data.toString();
-            const arr = lines.split('\n', 5).join('\n');
-        output.write(arr);
+        output.write(data.split('\n', 5).join('\n'));
             
         })
-    },
+    };
 
-    tail: function(file){
-        fs.readFile(file, function(err, data){
+    function tail(file){
+        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
             if (err) throw err;
-            const lines = data.toString();
-            const arr = lines.split('\n');
-            const str = arr.slice(arr.length - 5).join('\n')
-           output.write(str);
-            
+           output.write(data.split('\n').slice(-5).join('\n'));
         })
-    },
+    };
 
-    sort: function(file){
-        fs.readFile(file, function(err, data){
+    function sort(file){
+        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
             if (err) throw err;
             const lines = data.toString();
             const arr = lines.split('\n');
@@ -61,18 +63,18 @@ module.exports = {
         return str;
             //fix uppercase/lowercase problem if we have time
         })
-    },
+    };
 
-    wc: function(file){
+    function wc(file){
         fs.readFile(file, function(err, data){
             if (err) throw err;
             const lines = data.toString();
             const arr = lines.split('\n');
         output.write(arr.length.toString());
         });
-    },
+    };
 
-    uniq: function(file){
+    function uniq(file){
         fs.readFile(file, function(err, data){
             if (err) throw err;
             const newArr = [];
@@ -86,16 +88,30 @@ module.exports = {
             const str = newArr.join('\n')
             output.write(str);
         });
-    }, 
+    };
 
-    curl: function(url){
+    function curl(url){
         req(url, function(err, resp, body){
             console.log('error:', err);
             console.log('statusCode:', resp && resp.statusCode);
             console.log('body:', body);
         });
+    };
+
+    module.exports = {
+        pwd: pwd, 
+        date: date,
+        ls: ls,
+        echo: echo,
+        cat: cat,
+        head: head,
+        tail: tail,
+        sort: sort,
+        wc: wc,
+        uniq: uniq,
+        curl: curl
     }
-}
+
 
 //fs.readFile(something, 'utf8', function(err, contents){
 //     console.log(contents);
