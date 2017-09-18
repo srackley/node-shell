@@ -2,30 +2,31 @@ const fs = require('fs');
 const output = process.stdout;
 const req = require('request');
 
-    function pwd(){
-        output.write(process.cwd());  
+    function pwd(stdin, file, done){
+        done(process.cwd());  
     };
 
-    function date(file){
-        output.write(Date()); 
+    function date(stdin, file, done){
+        done(Date()); 
     };
 
-    function ls(file){
+    function ls(stdin, file, done){
         fs.readdir('.', function(err, files){
             if (err) throw err;
-            output.write(files.join('\n'));
+            done(files.join('\n'));
         });
     };
 
-    function echo(file){
+    function echo(stdin, file, done){
         const info = file
         .split(' ')
         .map((arg)=> (arg[0] === '$') ? process.env[arg.slice(1)] : arg)
         .join(' ');
-        output.write(info);
+        done(info);
     };
 
-    function cat(files){
+    function cat(stdin, files, done){
+        if (stdin && !files) return done(stdin);
         files = files.split(' ');
         const texts = [];
         var count = 0;
@@ -34,67 +35,72 @@ const req = require('request');
                 if (err) throw err;
                 texts[i] = text;
                 count++;
-                if (count === files.length) output.write(texts.join(''));
+                if (count === files.length) done(texts.join(''));
             });
         });
     };
 
-    function head(file){
-        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
+    function head(stdin, file, done){
+        if (stdin && !file) produceOutput(null, stdin);
+        else fs.readFile(file, {encoding: 'utf8'}, produceOutput);
+        function produceOutput(err, data){
             if (err) throw err;
-        output.write(data.split('\n', 5).join('\n'));
-            
-        })
+        done(data.split('\n', 5).join('\n'));
+        }
     };
 
-    function tail(file){
-        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
+    function tail(stdin, file, done){
+        if (stdin && !file) produceOutput(null, stdin);        
+        else fs.readFile(file, {encoding: 'utf8'}, produceOutput);
+        function produceOutput(err, data){
             if (err) throw err;
-           output.write(data.split('\n').slice(-5).join('\n'));
-        })
+           done(data.split('\n').slice(-5).join('\n'));
+        }
     };
 
-    function sort(file){
-        fs.readFile(file, {encoding: 'utf8'}, function(err, data){
+    function sort(stdin, file, done){
+        if (stdin && !file) produceOutput(null, stdin);        
+        else fs.readFile(file, {encoding: 'utf8'}, produceOutput);
+        function produceOutput(err, data){
             if (err) throw err;
-            const lines = data.toString();
-            const arr = lines.split('\n');
-            const str = arr.sort().join('\n');
-        return str;
+            done(data.split('\n').sort().join('\n'));
             //fix uppercase/lowercase problem if we have time
-        })
+        }
     };
 
-    function wc(file){
-        fs.readFile(file, function(err, data){
+    function wc(stdin, file, done){
+        if (stdin && !file) produceOutput(null, stdin);                
+        else fs.readFile(file, {encoding: 'utf8'}, produceOutput);
+        function produceOutput(err, data){
             if (err) throw err;
-            const lines = data.toString();
-            const arr = lines.split('\n');
-        output.write(arr.length.toString());
-        });
+            done(data.split('\n').length);
+        };
     };
 
-    function uniq(file){
-        fs.readFile(file, function(err, data){
+    function uniq(stdin, file, done){
+        if (stdin && !file) produceOutput(null, stdin);                
+        else fs.readFile(file, {encoding: 'utf8'}, produceOutput);
+        function produceOutput(err, data){
             if (err) throw err;
-            const newArr = [];
-            const lines = data.toString();
-            const arr = lines.split('\n').sort();
-            for (var i = 0; i < arr.length; i++){
-                if (arr[i] !== arr[i + 1]){
-                    newArr.push(arr[i]);
+            var arr = [];
+            const lines = data.split('\n');
+            for (var i = 0; i < lines.length; i++){
+                if (lines[i] !== lines[i + 1]){
+                    arr.push(lines[i]);
                 }
             }
-            const str = newArr.join('\n')
-            output.write(str);
-        });
+            done(arr.join('\n'));
+        };
     };
 
-    function curl(url){
+    function curl(stdin, url, done){
+        if (stdin && !url) produceOutput(null, stdin);                
+        else if (url.slice(0, 7) !== 'http://') url = 'http://' + url;
         req(url, function(err, resp, body){
-            console.log('error:', err);
-            console.log('statusCode:', resp && resp.statusCode);
-            console.log('body:', body);
+            if (err) throw err;
+            // console.log('statusCode:', resp && resp.statusCode);
+            if (body) done(body);
+            else done('');
         });
     };
 
